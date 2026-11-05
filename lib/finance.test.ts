@@ -62,5 +62,33 @@ test("invalid dates and malformed payment entries are rejected", () => {
   assert.equal(validData(payload), false);
 });
 
-test("November 10–30 is 21 inclusive days, subsequent installments remain full",()=>{assert.equal(installmentAmount(initial.property,0),5950);assert.equal(installmentAmount(initial.property,1),8500);assert.equal(calculate(initial).contract,73950);const p={...initial.property,start:"2028-02-10",rent:2900};assert.equal(installmentAmount(p,0),2000);});
-test("legacy confirmed receipts survive migration while outstanding is corrected",()=>{const d=structuredClone(initial);d.payments[0]={paid:true,received:"2026-11-10"};const migrated=preserveReceipts(d);assert.equal(calculate(migrated).received,8500);assert.equal(calculate(migrated).outstanding,65450);assert.deepEqual(preserveReceipts(migrated),migrated);assert.ok(validData(migrated));});
+test("November 10–30 is 21 inclusive days, subsequent installments remain full", () => {
+  assert.equal(installmentAmount(initial.property, 0), 5950);
+  assert.equal(installmentAmount(initial.property, 1), 8500);
+  assert.equal(calculate(initial).contract, 73950);
+  const p = { ...initial.property, start: "2028-02-10", rent: 2900 };
+  assert.equal(installmentAmount(p, 0), 2000);
+});
+test("legacy confirmed receipts survive migration while outstanding is corrected", () => {
+  const d = structuredClone(initial);
+  d.payments[0] = { paid: true, received: "2026-11-10" };
+  const migrated = preserveReceipts(d);
+  assert.equal(calculate(migrated).received, 8500);
+  assert.equal(calculate(migrated).outstanding, 65450);
+  assert.deepEqual(preserveReceipts(migrated), migrated);
+  assert.ok(validData(migrated));
+});
+
+test("Premium Plus is retained and safely added to older local records", async () => {
+  const { applyMarketSnapshot } = await import("./finance.ts");
+  assert.equal(initial.property.finish, "Premium Plus");
+  const old = structuredClone(initial);
+  delete old.property.finish;
+  old.property.market = 1300000;
+  const updated = applyMarketSnapshot(old);
+  assert.equal(updated.property.finish, "Premium Plus");
+  assert.equal(updated.property.market, 1300000);
+  assert.deepEqual(updated.payments, old.payments);
+  assert.ok(validData(updated));
+  assert.deepEqual(applyMarketSnapshot(updated), updated);
+});

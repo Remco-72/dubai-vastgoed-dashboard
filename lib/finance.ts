@@ -16,6 +16,7 @@ export type Property = {
   start: string;
   months: number;
   market: number | null;
+  finish?: string;
 };
 export type Payment = {
   paid: boolean;
@@ -51,6 +52,7 @@ export const initial: Data = {
     start: "2026-11-10",
     months: 9,
     market: null,
+    finish: "Premium Plus",
   },
   payments: Array.from({ length: 9 }, () => ({ paid: false, received: "" })),
   costs: {
@@ -142,6 +144,9 @@ export function validData(value: unknown): value is Data {
     ["project", "unit", "location", "id"].every(
       (k) => typeof d.property[k as keyof Property] === "string",
     ) &&
+    (d.property.finish === undefined ||
+      (typeof d.property.finish === "string" &&
+        d.property.finish.length <= 80)) &&
     nonneg(d.property.purchase) &&
     d.property.purchase > 0 &&
     nonneg(d.property.rent) &&
@@ -191,6 +196,14 @@ export function contractEnd(start: string, months: number) {
 }
 
 export function applyMarketSnapshot(data: Data): Data {
+  if (
+    data.property.id === initial.property.id &&
+    data.property.finish === undefined
+  )
+    data = {
+      ...data,
+      property: { ...data.property, finish: initial.property.finish },
+    };
   if (data.marketSeedVersion === marketSnapshotVersion) return data;
   return {
     ...data,

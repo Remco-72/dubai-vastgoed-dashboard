@@ -45,6 +45,7 @@ try {
     return (await fetch(link.href)).json();
   });
   assert.match(await page.locator("main").innerText(), /73\.950/);
+  assert.match(await page.locator("main").innerText(), /Premium Plus/);
   assert.equal(fetched.display, "standalone");
   assert.equal(fetched.scope, manifest.scope);
   assert.equal(fetched.icons.length, 3);
@@ -83,6 +84,7 @@ try {
     10,
   );
   assert.match(await page.locator("main").innerText(), /80\.000/);
+  assert.match(await page.locator("main").innerText(), /Premium Plus/);
   assert.match(
     await page.locator("main").innerText(),
     /niet rechtstreeks geverifieerd/,

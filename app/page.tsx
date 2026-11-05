@@ -330,6 +330,9 @@ export default function Dashboard() {
                   </p>
                   <div className="property-facts">
                     <span>1-bedroom apartment</span>
+                    <span className="gold">
+                      {p.finish || "Afwerking onbekend"}
+                    </span>
                     <span>
                       {num(p.area)} sqft <small>incl. balkons</small>
                     </span>
@@ -977,6 +980,20 @@ export default function Dashboard() {
               begindatum staan voor deze eerste versie vast.
             </p>
             <div className="settings-fields">
+              <label>
+                Afwerkingsniveau
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={p.finish ?? ""}
+                  onChange={(e) =>
+                    setData((d) => ({
+                      ...d,
+                      property: { ...d.property, finish: e.target.value },
+                    }))
+                  }
+                />
+              </label>
               {(
                 [
                   { key: "purchase", label: "Aankoopprijs (AED)", min: 1 },

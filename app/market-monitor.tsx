@@ -557,8 +557,9 @@ export function MarketMonitor({
           <div>
             <h2>Brongegevens & vergelijking met unit 1107</h2>
             <p>
-              Jouw aankoop: {money(property.purchase / property.area)}/sqft ·
-              jaarhuur: {money((property.rent * 12) / property.area)}/sqft.
+              Jouw afwerking: {property.finish || "Onbekend"}. Jouw aankoop:{" "}
+              {money(property.purchase / property.area)}/sqft · jaarhuur:{" "}
+              {money((property.rent * 12) / property.area)}/sqft.
             </p>
           </div>
           <div className="heading-actions">
@@ -756,16 +757,20 @@ export function MarketMonitor({
           </table>
         </div>
         <div className="formula">
-          Vraagprijzen en gerealiseerde bedragen worden niet samengevoegd. AED
-          per sqft wordt berekend uit het bedrag en de opgegeven oppervlakte; de
-          aangeleverde sqft-prijs staat waar beschikbaar afzonderlijk vermeld.
-          Vergelijkingen zijn op prijs per sqft, zonder correctie voor
-          inrichting, afwerking, verdieping of balkondefinitie.
-          Bayut-beschikbaarheid verandert: de peildatum is de laatste handmatige
-          controle, geen live status. Aangeleverde transacties tellen apart
-          herkenbaar mee; zij zijn niet rechtstreeks aan DLD gecontroleerd.
-          Gearchiveerd Bayut-aanbod telt niet mee in aanbodmedianen. Alle
-          marktgegevens zitten ook in de algemene dashboardback-up.
+          Jouw unit heeft afwerking {property.finish || "onbekend"}, door jou
+          opgegeven. De afwerking van de aangeleverde vergelijkingsobjecten is
+          onbekend. Zonder aantoonbaar vergelijkbare afwerking wordt geen
+          waardetoeslag of prijscorrectie berekend. Vraagprijzen en
+          gerealiseerde bedragen worden niet samengevoegd. AED per sqft wordt
+          berekend uit het bedrag en de opgegeven oppervlakte; de aangeleverde
+          sqft-prijs staat waar beschikbaar afzonderlijk vermeld. Vergelijkingen
+          zijn op prijs per sqft, zonder correctie voor inrichting, afwerking,
+          verdieping of balkondefinitie. Bayut-beschikbaarheid verandert: de
+          peildatum is de laatste handmatige controle, geen live status.
+          Aangeleverde transacties tellen apart herkenbaar mee; zij zijn niet
+          rechtstreeks aan DLD gecontroleerd. Gearchiveerd Bayut-aanbod telt
+          niet mee in aanbodmedianen. Alle marktgegevens zitten ook in de
+          algemene dashboardback-up.
         </div>
       </section>
     </>
