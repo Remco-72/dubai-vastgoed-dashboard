@@ -1,0 +1,32 @@
+{
+  "id": "/dubai-vastgoed-dashboard/",
+  "name": "Apex Property Intelligence",
+  "short_name": "Apex",
+  "description": "Binghatti Apex · Unit 1107. Vastgoedadministratie op je iPad.",
+  "lang": "nl",
+  "start_url": "/dubai-vastgoed-dashboard/",
+  "scope": "/dubai-vastgoed-dashboard/",
+  "display": "standalone",
+  "background_color": "#0c111b",
+  "theme_color": "#0c111b",
+  "icons": [
+    {
+      "src": "/dubai-vastgoed-dashboard/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/dubai-vastgoed-dashboard/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/dubai-vastgoed-dashboard/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
