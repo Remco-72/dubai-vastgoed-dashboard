@@ -1,4 +1,4 @@
-:HL["/dubai-vastgoed-dashboard/_next/static/css/47fc188e8c8824bf.css","style"]
+:HL["/dubai-vastgoed-dashboard/_next/static/css/215df7138c5912d7.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"wzMqvXlftMo0o_nCeJA8q","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"zKWzm7ef5b7elaKH9HqE5","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
