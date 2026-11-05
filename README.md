@@ -43,7 +43,7 @@ Je kunt het dashboard ook op de computer bekijken via `http://localhost:3000`. O
 
 ## Eerste gebruik
 
-- **Overzicht:** controleer aankoopprijs AED 1.200.000, contracthuur AED 76.500 en bruto rendement 8,5%. Alle bedragen zijn in AED.
+- **Overzicht:** controleer aankoopprijs AED 1.200.000, contracthuur AED 73.950 en bruto rendement 8,5%. Alle bedragen zijn in AED.
 - **Huuradministratie:** er staan negen termijnen klaar, van 10 november 2026 tot en met 10 juli 2027. Vul alleen bij een daadwerkelijk ontvangen betaling de ontvangstdatum in en bevestig de melding. Via **Heropenen** maak je dit ongedaan. Er wordt niets automatisch als betaald aangemerkt. Toekomstige ontvangstdatums worden geweigerd.
 - **Kosten en rendement:** vul jaarlijkse exploitatiekosten en eenmalige aankoopkosten/meubilair in. Een leeg veld betekent onbekend; vul `0` in als een post niet van toepassing is. Netto rendement verschijnt pas wanneer alle zeven posten bekend zijn.
 - **Marktmonitor:** filter op te koop, verkocht, te huur en huurtransacties. Alle records zijn fictieve, duidelijk gemarkeerde demonstraties. Er zijn geen live marktgegevens.
@@ -51,7 +51,7 @@ Je kunt het dashboard ook op de computer bekijken via `http://localhost:3000`. O
 - **Instellingen:** tik op het schuifjespictogram rechtsboven of op **Objectdetails**. Hier wijzig je aankoopprijs, maandhuur, oppervlakte en optionele geschatte marktwaarde. Dit laatste is een eigen schatting, geen officiële taxatie. De begindatum en negenmaandsduur staan voor deze eerste versie vast.
 - **Back-up:** tik regelmatig op de downloadknop **Exporteer gegevens** en bewaar het JSON-bestand in Bestanden op je iPad. Terugzetten kan via **Objectdetails → Back-up importeren**. Import vervangt de huidige administratie na bevestiging.
 
-**Let op bij wijziging van de maandhuur:** dit corrigeert de contractgegevens voor alle negen termijnen, inclusief reeds ontvangen bedragen. Deze eerste versie registreert uitsluitend volledig betaalde maandtermijnen; deelbetalingen en tussentijdse huurprijswijzigingen worden niet ondersteund.
+**Let op bij wijziging van de maandhuur:** dit corrigeert de geplande contracttermijnen; eerder bevestigde ontvangstbedragen blijven bewaard. Deze eerste versie registreert uitsluitend volledig betaalde maandtermijnen; deelbetalingen en tussentijdse huurprijswijzigingen worden niet ondersteund.
 
 ## Lokaal bewaren en privacy
 
@@ -61,12 +61,12 @@ De lokale preview heeft geen inlogscherm. Gebruik hem op je vertrouwde privénet
 
 ## Berekeningen
 
-- Contracthuur: AED 8.500 × 9 = **AED 76.500**.
+- Contracthuur: eerste termijn 10 t/m 30 november (21/30 × AED 8.500 = AED 5.950) + 8 × AED 8.500 = **AED 73.950**. De overige vervaldata en contracteinddatum blijven ongewijzigd.
 - Geëxtrapoleerde jaarhuur: AED 8.500 × 12 = **AED 102.000**.
 - Bruto rendement: jaarhuur ÷ aankoopprijs × 100 = **8,5%**.
 - Netto rendement: (jaarhuur − jaarlijkse exploitatiekosten) ÷ (aankoopprijs + eenmalige aankoopkosten + meubilair) × 100.
 - Jaarlijkse exploitatiekosten: service charges, onderhoud, verzekering, beheer en overige kosten.
-- Ontvangen huur: aantal bevestigde volledige termijnen × maandhuur.
+- Ontvangen huur: som van de bevestigde ontvangstbedragen; de eerste termijn is naar rato. Historische bevestigde ontvangstbedragen blijven bij een upgrade/import behouden.
 - Openstaand: contracthuur − ontvangen huur, inclusief nog niet vervallen termijnen.
 
 De jaarlijkse huur is een extrapolatie van het negenmaandscontract, geen gegarandeerde huur na afloop. Contractperiode: 10 november 2026 t/m 9 augustus 2027. Bruto is exclusief kosten. Netto bevat uitsluitend de ingevoerde kosten, geen financiering, belasting, verkoopresultaat of aanvullende leegstandsaanname.

@@ -1624,3 +1624,5 @@ main {
     padding-top: max(15px, env(safe-area-inset-top));
   }
 }
+
+.bar-slot { display:flex; flex-direction:column; justify-content:flex-end; }

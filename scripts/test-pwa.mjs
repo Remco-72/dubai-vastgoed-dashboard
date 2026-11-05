@@ -44,6 +44,7 @@ try {
     const link = document.querySelector("link[rel=manifest]");
     return (await fetch(link.href)).json();
   });
+  assert.match(await page.locator("main").innerText(), /73\.950/);
   assert.equal(fetched.display, "standalone");
   assert.equal(fetched.scope, manifest.scope);
   assert.equal(fetched.icons.length, 3);
@@ -58,6 +59,8 @@ try {
   await page
     .getByRole("button", { name: "Huuradministratie", exact: true })
     .click();
+  assert.match(await page.locator("tbody tr").first().innerText(), /5\.950/);
+  assert.match(await page.locator("tbody tr").nth(1).innerText(), /8\.500/);
   await page
     .getByLabel("Ontvangstdatum termijn 1", { exact: true })
     .fill(

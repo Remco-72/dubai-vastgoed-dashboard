@@ -10,7 +10,7 @@ export type Property = {
   months: number;
   market: number | null;
 };
-export type Payment = { paid: boolean; received: string };
+export type Payment = { paid: boolean; received: string; receivedAmount?: number };
 export type Valuation = { id: string; date: string; amount: number };
 export type CostKey =
   | "service"
@@ -60,11 +60,22 @@ export function dueDate(start: string, index: number) {
   date.setUTCDate(Math.min(d, last));
   return date.toISOString().slice(0, 10);
 }
+/** First calendar month includes the start date and its final day. Later terms stay unchanged. */
+export function installmentAmount(p: Property, index: number) {
+  if (index !== 0) return p.rent;
+  const [year, month, day] = p.start.split("-").map(Number);
+  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return Math.round(p.rent * (days - day + 1) / days * 100) / 100;
+}
+/** Preserve actual receipts from the previous full-month ledger during upgrade/import. */
+export function preserveReceipts(data: Data): Data {
+  return {...data, payments:data.payments.map(payment => payment.paid && payment.receivedAmount === undefined ? {...payment,receivedAmount:data.property.rent} : payment)};
+}
 export function calculate(data: Data) {
   const p = data.property;
-  const contract = p.rent * p.months;
+  const contract = data.payments.reduce((sum, _, i) => sum + installmentAmount(p, i), 0);
   const annual = p.rent * 12;
-  const received = data.payments.filter((x) => x.paid).length * p.rent;
+  const received = data.payments.reduce((sum, x, i) => sum + (x.paid ? (x.receivedAmount ?? installmentAmount(p, i)) : 0), 0);
   const operating = [
     "service",
     "maintenance",
@@ -120,6 +131,7 @@ export function validData(value: unknown): value is Data {
         typeof x === "object" &&
         typeof x.paid === "boolean" &&
         typeof x.received === "string" &&
+        (x.receivedAmount === undefined || nonneg(x.receivedAmount)) &&
         (x.paid ? date(x.received) : x.received === ""),
     ) &&
     !!d.costs &&

@@ -3,17 +3,19 @@ import assert from "node:assert/strict";
 import {
   initial,
   calculate,
+  installmentAmount,
+  preserveReceipts,
   dueDate,
   contractEnd,
   validData,
 } from "./finance.ts";
 test("contract, extrapolation and no assumed receipts", () => {
   const f = calculate(initial);
-  assert.equal(f.contract, 76500);
+  assert.equal(f.contract, 73950);
   assert.equal(f.annual, 102000);
   assert.equal(f.gross, 8.5);
   assert.equal(f.received, 0);
-  assert.equal(f.outstanding, 76500);
+  assert.equal(f.outstanding, 73950);
   assert.equal(f.net, null);
 });
 test("confirmed receipt and full-cost net yield", () => {
@@ -29,7 +31,7 @@ test("confirmed receipt and full-cost net yield", () => {
     furniture: 20000,
   };
   const f = calculate(d);
-  assert.equal(f.received, 8500);
+  assert.equal(f.received, 5950);
   assert.equal(f.outstanding, 68000);
   assert.equal(f.net, (82000 / 1280000) * 100);
   assert.ok(validData(d));
@@ -59,3 +61,6 @@ test("invalid dates and malformed payment entries are rejected", () => {
   };
   assert.equal(validData(payload), false);
 });
+
+test("November 10–30 is 21 inclusive days, subsequent installments remain full",()=>{assert.equal(installmentAmount(initial.property,0),5950);assert.equal(installmentAmount(initial.property,1),8500);assert.equal(calculate(initial).contract,73950);const p={...initial.property,start:"2028-02-10",rent:2900};assert.equal(installmentAmount(p,0),2000);});
+test("legacy confirmed receipts survive migration while outstanding is corrected",()=>{const d=structuredClone(initial);d.payments[0]={paid:true,received:"2026-11-10"};const migrated=preserveReceipts(d);assert.equal(calculate(migrated).received,8500);assert.equal(calculate(migrated).outstanding,65450);assert.deepEqual(preserveReceipts(migrated),migrated);assert.ok(validData(migrated));});

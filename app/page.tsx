@@ -25,6 +25,8 @@ import { demoRecords } from "../lib/market";
 import {
   initial,
   calculate,
+  installmentAmount,
+  preserveReceipts,
   dueDate,
   contractEnd,
   validData,
@@ -96,7 +98,7 @@ export default function Dashboard() {
       const raw = localStorage.getItem("apex-v1");
       if (raw) {
         const saved = JSON.parse(raw);
-        if (validData(saved)) setData(saved);
+        if (validData(saved)) setData(preserveReceipts(saved));
         else
           setStorageError(
             "Opgeslagen gegevens zijn ongeldig. Exporteer of controleer de browseropslag voordat je wijzigingen maakt.",
@@ -176,7 +178,7 @@ export default function Dashboard() {
       const d = JSON.parse(await selected.text());
       if (!validData(d)) throw Error();
       if (window.confirm("Huidige gegevens vervangen door deze back-up?")) {
-        setData(d);
+        setData(preserveReceipts(d));
         setStorageError("");
         setNotice("Back-up hersteld.");
       }
@@ -189,7 +191,7 @@ export default function Dashboard() {
     setData((d) => ({
       ...d,
       payments: d.payments.map((x, j) =>
-        i === j ? { paid: !!received, received } : x,
+        i === j ? { paid: !!received, received, ...(received ? {receivedAmount:installmentAmount(d.property,i)} : {}) } : x,
       ),
     }));
   }
@@ -371,7 +373,7 @@ export default function Dashboard() {
                 <Kpi
                   label="Bruto huurrendement"
                   value={`${num(f.gross)}%`}
-                  sub="Op jaarbasis · exclusief kosten"
+                  sub="Op jaarbasis · volle maandhuur · excl. kosten"
                   gold
                   icon={<TrendingUp size={18} />}
                 />
@@ -429,7 +431,8 @@ export default function Dashboard() {
                         <div className="bar-slot" key={i}>
                           <div
                             className={"bar " + (v.paid ? "received" : "")}
-                            title={`${date(dueDate(p.start, i))}: ${money(p.rent)} ${v.paid ? "ontvangen" : "contractueel"}`}
+                            style={{height:`${p.rent > 0 ? (v.paid ? (v.receivedAmount ?? installmentAmount(p,i)) : installmentAmount(p,i))/p.rent*100 : 0}%`}}
+                            title={`${date(dueDate(p.start, i))}: ${money(v.paid ? (v.receivedAmount ?? installmentAmount(p,i)) : installmentAmount(p,i))} ${v.paid ? "ontvangen" : "contractueel"}`}
                           />
                           <span>
                             {new Date(
@@ -480,7 +483,7 @@ export default function Dashboard() {
                   <div className="next-payment">
                     <span>VOLGENDE OPENSTAANDE TERMIJN</span>
                     <strong>
-                      {next < 0 ? "Alles ontvangen" : money(p.rent)}{" "}
+                      {next < 0 ? "Alles ontvangen" : money(installmentAmount(p,next))}{" "}
                       <small>
                         {next < 0 ? "" : date(dueDate(p.start, next))}
                       </small>
@@ -527,8 +530,7 @@ export default function Dashboard() {
                   <div>
                     <h2>Maandelijkse huurtermijnen</h2>
                     <p>
-                      Vul de werkelijke ontvangstdatum in om een betaling te
-                      bevestigen.
+                      Eerste termijn: 10 t/m 30 november 2026, 21/30 × de maandhuur. De overige termijnen en vervaldata blijven ongewijzigd. Vul de werkelijke ontvangstdatum in om een betaling te bevestigen.
                     </p>
                   </div>
                   <span className="chip">Maandelijks</span>
@@ -552,7 +554,7 @@ export default function Dashboard() {
                             {String(i + 1).padStart(2, "0")}
                           </td>
                           <td>{date(dueDate(p.start, i))}</td>
-                          <td>{money(p.rent)}</td>
+                          <td>{money(installmentAmount(p,i))}{i===0 && <small className="table-small">10 t/m 30 november · 21/30 naar rato</small>}</td>
                           <td>
                             <span
                               className={
@@ -587,12 +589,13 @@ export default function Dashboard() {
                                 if (
                                   !e.target.value ||
                                   window.confirm(
-                                    `Ontvangst van ${money(p.rent)} voor termijn ${i + 1} bevestigen?`,
+                                    `Ontvangst van ${money(installmentAmount(p,i))} voor termijn ${i + 1} bevestigen?`,
                                   )
                                 )
                                   paid(i, e.target.value);
                               }}
                             />
+                            {v.paid && <small className="table-small">Ontvangen: {money(v.receivedAmount ?? installmentAmount(p,i))}</small>}
                           </td>
                           <td>
                             {v.paid ? (
@@ -1124,7 +1127,7 @@ export default function Dashboard() {
             </div>
             <p className="muted">
               Een wijziging van de maandhuur herberekent alle negen termijnen,
-              ook ontvangen bedragen. Gebruik dit alleen om de contractgegevens
+              de geplande termijnen. Bevestigde ontvangstbedragen blijven bewaard. Gebruik dit alleen om de contractgegevens
               te corrigeren.
             </p>
             <div className="modal-actions">
