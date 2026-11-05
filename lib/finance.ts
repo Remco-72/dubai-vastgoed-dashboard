@@ -1,3 +1,10 @@
+import {
+  validMarketRecord,
+  suppliedMarketRecords,
+  marketSnapshotVersion,
+  mergeMarketRecords,
+  type MarketRecord,
+} from "./market.ts";
 export type Property = {
   id: string;
   project: string;
@@ -10,7 +17,11 @@ export type Property = {
   months: number;
   market: number | null;
 };
-export type Payment = { paid: boolean; received: string; receivedAmount?: number };
+export type Payment = {
+  paid: boolean;
+  received: string;
+  receivedAmount?: number;
+};
 export type Valuation = { id: string; date: string; amount: number };
 export type CostKey =
   | "service"
@@ -25,6 +36,8 @@ export type Data = {
   payments: Payment[];
   costs: Record<CostKey, number | null>;
   valuations: Valuation[];
+  market?: MarketRecord[];
+  marketSeedVersion?: string;
 };
 export const initial: Data = {
   property: {
@@ -50,6 +63,8 @@ export const initial: Data = {
     furniture: null,
   },
   valuations: [],
+  market: suppliedMarketRecords,
+  marketSeedVersion: marketSnapshotVersion,
 };
 export function dueDate(start: string, index: number) {
   const [y, m, d] = start.split("-").map(Number);
@@ -65,17 +80,31 @@ export function installmentAmount(p: Property, index: number) {
   if (index !== 0) return p.rent;
   const [year, month, day] = p.start.split("-").map(Number);
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return Math.round(p.rent * (days - day + 1) / days * 100) / 100;
+  return Math.round(((p.rent * (days - day + 1)) / days) * 100) / 100;
 }
 /** Preserve actual receipts from the previous full-month ledger during upgrade/import. */
 export function preserveReceipts(data: Data): Data {
-  return {...data, payments:data.payments.map(payment => payment.paid && payment.receivedAmount === undefined ? {...payment,receivedAmount:data.property.rent} : payment)};
+  return {
+    ...data,
+    payments: data.payments.map((payment) =>
+      payment.paid && payment.receivedAmount === undefined
+        ? { ...payment, receivedAmount: data.property.rent }
+        : payment,
+    ),
+  };
 }
 export function calculate(data: Data) {
   const p = data.property;
-  const contract = data.payments.reduce((sum, _, i) => sum + installmentAmount(p, i), 0);
+  const contract = data.payments.reduce(
+    (sum, _, i) => sum + installmentAmount(p, i),
+    0,
+  );
   const annual = p.rent * 12;
-  const received = data.payments.reduce((sum, x, i) => sum + (x.paid ? (x.receivedAmount ?? installmentAmount(p, i)) : 0), 0);
+  const received = data.payments.reduce(
+    (sum, x, i) =>
+      sum + (x.paid ? (x.receivedAmount ?? installmentAmount(p, i)) : 0),
+    0,
+  );
   const operating = [
     "service",
     "maintenance",
@@ -138,6 +167,10 @@ export function validData(value: unknown): value is Data {
     Object.keys(initial.costs).every(
       (k) => d.costs[k as CostKey] === null || nonneg(d.costs[k as CostKey]),
     ) &&
+    (d.marketSeedVersion === undefined ||
+      typeof d.marketSeedVersion === "string") &&
+    (d.market === undefined ||
+      (Array.isArray(d.market) && d.market.every(validMarketRecord))) &&
     Array.isArray(d.valuations) &&
     d.valuations.every(
       (x) =>
@@ -155,4 +188,13 @@ export function contractEnd(start: string, months: number) {
   const end = new Date(dueDate(start, months) + "T12:00:00Z");
   end.setUTCDate(end.getUTCDate() - 1);
   return end.toISOString().slice(0, 10);
+}
+
+export function applyMarketSnapshot(data: Data): Data {
+  if (data.marketSeedVersion === marketSnapshotVersion) return data;
+  return {
+    ...data,
+    market: mergeMarketRecords(data.market ?? [], suppliedMarketRecords),
+    marketSeedVersion: marketSnapshotVersion,
+  };
 }

@@ -46,7 +46,7 @@ Je kunt het dashboard ook op de computer bekijken via `http://localhost:3000`. O
 - **Overzicht:** controleer aankoopprijs AED 1.200.000, contracthuur AED 73.950 en bruto rendement 8,5%. Alle bedragen zijn in AED.
 - **Huuradministratie:** er staan negen termijnen klaar, van 10 november 2026 tot en met 10 juli 2027. Vul alleen bij een daadwerkelijk ontvangen betaling de ontvangstdatum in en bevestig de melding. Via **Heropenen** maak je dit ongedaan. Er wordt niets automatisch als betaald aangemerkt. Toekomstige ontvangstdatums worden geweigerd.
 - **Kosten en rendement:** vul jaarlijkse exploitatiekosten en eenmalige aankoopkosten/meubilair in. Een leeg veld betekent onbekend; vul `0` in als een post niet van toepassing is. Netto rendement verschijnt pas wanneer alle zeven posten bekend zijn.
-- **Marktmonitor:** filter op te koop, verkocht, te huur en huurtransacties. Alle records zijn fictieve, duidelijk gemarkeerde demonstraties. Er zijn geen live marktgegevens.
+- **Marktmonitor:** bevat de vijf verkopen en vijf nieuwe huurcontracten die op 5 november 2026 zijn aangeleverd, met unitnummer, datum, bedrag, oppervlakte en vergelijking met unit 1107. Deze zijn als geregistreerd aangeleverd, maar niet rechtstreeks aan DLD geverifieerd: bronlinks en transactiereferenties ontbreken. Bayut-aanbod blijft apart van gerealiseerde transacties. Deel een advertentielink vanuit Bayut om aanbod vast te leggen. Voeg DLD-bronrecords toe via de invoer of importeer markt-JSON. Er is geen automatische DLD- of Bayut-datastroom actief.
 - **Waardeontwikkeling:** voeg een peildatum en handmatige waarde toe. Toekomstige peildatums worden scenario's genoemd. Meetpunten staan gelijkmatig verdeeld op de grafiek, niet op een proportionele tijdas. De tabel geeft de exacte bedragen en datums.
 - **Instellingen:** tik op het schuifjespictogram rechtsboven of op **Objectdetails**. Hier wijzig je aankoopprijs, maandhuur, oppervlakte en optionele geschatte marktwaarde. Dit laatste is een eigen schatting, geen officiële taxatie. De begindatum en negenmaandsduur staan voor deze eerste versie vast.
 - **Back-up:** tik regelmatig op de downloadknop **Exporteer gegevens** en bewaar het JSON-bestand in Bestanden op je iPad. Terugzetten kan via **Objectdetails → Back-up importeren**. Import vervangt de huidige administratie na bevestiging.
@@ -104,7 +104,7 @@ De financiële tests draaien met Node's ingebouwde testrunner. Webpack wordt exp
 - `app/globals.css`: Tailwind-import en responsieve navy/gold-vormgeving.
 - `lib/finance.ts`: getypeerd objectmodel, startgegevens, berekeningen en importvalidatie.
 - `lib/finance.test.ts`: tests voor berekeningen, datums en ongeldige invoer.
-- `lib/market.ts`: voorbeeldrecords en providerinterface met bron, bron-URL, transactie-ID, transactiedatum, verificatiestatus en ophaaldatum.
+- `lib/market.ts`: aangeleverde transacties, bronvalidatie, statistiek en providerinterface met bron, bron-URL, transactie-ID, transactiedatum, verificatiestatus en ophaaldatum.
 - `scripts/preview.mjs`: lokale preview met netwerkadressen voor de iPad.
 - `app/offline-app.tsx`: installatie-uitleg en gecontroleerde offlinegereedmelding.
 - `scripts/build-offline.mjs` en `scripts/service-worker-template.js`: versiegebonden offlinecache.
@@ -114,3 +114,15 @@ De financiële tests draaien met Node's ingebouwde testrunner. Webpack wordt exp
 Objectgegevens zijn losgekoppeld van de rekenfuncties en hebben een stabiele `property.id`. Voor een volgend appartement voeg je een nieuw `Data`-record toe, een objectselector en een browseropslagsleutel per object, bijvoorbeeld `apex-v1:<property.id>`. Migreer bestaande `apex-v1`-gegevens daarbij expliciet; overschrijf deze niet. De eerste versie richt zich uitsluitend op unit 1107.
 
 Toekomstige Bayut- of DLD-adapters implementeren `MarketProvider` en leveren `MarketRecord`-records. Vraagprijzen en gerealiseerde transacties hebben afzonderlijke categorieën. Verifieer bron en gebruiksrechten, vermeld herkomst en actualiteit en houd onbekende afwerking/inrichting expliciet onbekend. Er zijn geen scrapingprocessen, verzonnen transactiereferenties of API-sleutels ingebouwd.
+
+## Herkomst en gebruik marktgegevens
+
+De momentopname van 5 november 2026 bevat uitsluitend de door de gebruiker aangeleverde vijf 1BR-verkopen (28 oktober t/m 2 november) en vijf nieuwe huurcontracten (29 oktober t/m 3 november). Er zijn geen bronlinks of DLD/Ejari-referenties meegestuurd. Deze records hebben daarom `source: user` en `verification: unverified`, niet `dld` of `verified`. De app verzint geen afwerking, uitzicht, inrichting of transactiereferenties.
+
+Verkoopprijzen per sqft worden uit bedrag en oppervlakte berekend; de ingevoerde huurcontracten zijn jaarlijkse bedragen. De medianen tonen alleen de vastgelegde selectie en bewijzen geen volledige dekking van het gebouw of een officiële taxatie. Jouw eigen huurcontract en handmatige marktwaardeschatting worden niet gewijzigd.
+
+De eerste migratie voegt de tien records toe aan bestaande administratie zonder ontvangstbedragen, kosten of andere marktregels te verwijderen. `marketSeedVersion` voorkomt dat verwijderde records bij iedere herstart terugkomen. Marktregels zitten in de algemene back-up en kunnen ook apart worden geëxporteerd. JSON-import accepteert een array of `{ "records": [...] }` met hetzelfde schema als de export, maximaal 5 MB. Herhaalde bronreferenties worden bijgewerkt, niet dubbel toegevoegd.
+
+Voor DLD-invoer zijn een officiële HTTPS-bronlink, transactiereferentie en transactiedatum nodig. Bayut-invoer vereist een officiële Bayut-link en een peildatum. Invoer in m² wordt naar sqft omgerekend; maandhuur wordt expliciet met 12 omgerekend naar jaarhuur. Controleer object en bedrag zelf voordat je de controlebevestiging aanvinkt. Dat is een handmatige broncontrole, geen automatische verificatie door DLD. Markeer vervallen Bayut-advertenties als gearchiveerd; zij tellen daarna niet meer mee in aanbodmedianen.
+
+De officiële bronnen zijn vanuit de huidige cloudnetwerkpolicy niet bereikbaar en er is geen Bayut-appconnector beschikbaar. De app biedt bronlinks, invoer en import; er wordt geen live koppeling of actuele aanboddekking geclaimd.

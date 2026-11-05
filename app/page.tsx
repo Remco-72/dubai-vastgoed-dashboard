@@ -21,12 +21,13 @@ import {
 } from "lucide-react";
 import { OfflineApp } from "./offline-app";
 import { basePath } from "../lib/paths";
-import { demoRecords } from "../lib/market";
+import { MarketMonitor } from "./market-monitor";
 import {
   initial,
   calculate,
   installmentAmount,
   preserveReceipts,
+  applyMarketSnapshot,
   dueDate,
   contractEnd,
   validData,
@@ -63,25 +64,6 @@ const costLabels: Record<CostKey, string> = {
   purchase: "Aankoopkosten",
   furniture: "Meubilair",
 };
-const demos = demoRecords.map((v) => ({
-  type: (
-    {
-      "sale-listing": "Te koop",
-      "sale-transaction": "Verkocht",
-      "rent-listing": "Te huur",
-      "rent-transaction": "Verhuurd",
-    } as const
-  )[v.category],
-  unit: v.unit,
-  size: v.areaSqft,
-  amount: v.amountAed,
-  finish: v.finish,
-  furnished: {
-    furnished: "Gemeubileerd",
-    unfurnished: "Ongemeubileerd",
-    unknown: "Onbekend",
-  }[v.furnishing],
-}));
 export default function Dashboard() {
   const [data, setData] = useState<Data>(initial),
     [loaded, setLoaded] = useState(false),
@@ -89,7 +71,6 @@ export default function Dashboard() {
     [settings, setSettings] = useState(false),
     [notice, setNotice] = useState(""),
     [storageError, setStorageError] = useState(""),
-    [filter, setFilter] = useState("Alle"),
     [valuationDate, setValuationDate] = useState(""),
     [valuationAmount, setValuationAmount] = useState("");
   const file = useRef<HTMLInputElement>(null);
@@ -98,7 +79,8 @@ export default function Dashboard() {
       const raw = localStorage.getItem("apex-v1");
       if (raw) {
         const saved = JSON.parse(raw);
-        if (validData(saved)) setData(preserveReceipts(saved));
+        if (validData(saved))
+          setData(applyMarketSnapshot(preserveReceipts(saved)));
         else
           setStorageError(
             "Opgeslagen gegevens zijn ongeldig. Exporteer of controleer de browseropslag voordat je wijzigingen maakt.",
@@ -178,7 +160,7 @@ export default function Dashboard() {
       const d = JSON.parse(await selected.text());
       if (!validData(d)) throw Error();
       if (window.confirm("Huidige gegevens vervangen door deze back-up?")) {
-        setData(preserveReceipts(d));
+        setData(applyMarketSnapshot(preserveReceipts(d)));
         setStorageError("");
         setNotice("Back-up hersteld.");
       }
@@ -191,7 +173,15 @@ export default function Dashboard() {
     setData((d) => ({
       ...d,
       payments: d.payments.map((x, j) =>
-        i === j ? { paid: !!received, received, ...(received ? {receivedAmount:installmentAmount(d.property,i)} : {}) } : x,
+        i === j
+          ? {
+              paid: !!received,
+              received,
+              ...(received
+                ? { receivedAmount: installmentAmount(d.property, i) }
+                : {}),
+            }
+          : x,
       ),
     }));
   }
@@ -431,8 +421,10 @@ export default function Dashboard() {
                         <div className="bar-slot" key={i}>
                           <div
                             className={"bar " + (v.paid ? "received" : "")}
-                            style={{height:`${p.rent > 0 ? (v.paid ? (v.receivedAmount ?? installmentAmount(p,i)) : installmentAmount(p,i))/p.rent*100 : 0}%`}}
-                            title={`${date(dueDate(p.start, i))}: ${money(v.paid ? (v.receivedAmount ?? installmentAmount(p,i)) : installmentAmount(p,i))} ${v.paid ? "ontvangen" : "contractueel"}`}
+                            style={{
+                              height: `${p.rent > 0 ? ((v.paid ? (v.receivedAmount ?? installmentAmount(p, i)) : installmentAmount(p, i)) / p.rent) * 100 : 0}%`,
+                            }}
+                            title={`${date(dueDate(p.start, i))}: ${money(v.paid ? (v.receivedAmount ?? installmentAmount(p, i)) : installmentAmount(p, i))} ${v.paid ? "ontvangen" : "contractueel"}`}
                           />
                           <span>
                             {new Date(
@@ -483,7 +475,9 @@ export default function Dashboard() {
                   <div className="next-payment">
                     <span>VOLGENDE OPENSTAANDE TERMIJN</span>
                     <strong>
-                      {next < 0 ? "Alles ontvangen" : money(installmentAmount(p,next))}{" "}
+                      {next < 0
+                        ? "Alles ontvangen"
+                        : money(installmentAmount(p, next))}{" "}
                       <small>
                         {next < 0 ? "" : date(dueDate(p.start, next))}
                       </small>
@@ -530,7 +524,10 @@ export default function Dashboard() {
                   <div>
                     <h2>Maandelijkse huurtermijnen</h2>
                     <p>
-                      Eerste termijn: 10 t/m 30 november 2026, 21/30 × de maandhuur. De overige termijnen en vervaldata blijven ongewijzigd. Vul de werkelijke ontvangstdatum in om een betaling te bevestigen.
+                      Eerste termijn: 10 t/m 30 november 2026, 21/30 × de
+                      maandhuur. De overige termijnen en vervaldata blijven
+                      ongewijzigd. Vul de werkelijke ontvangstdatum in om een
+                      betaling te bevestigen.
                     </p>
                   </div>
                   <span className="chip">Maandelijks</span>
@@ -554,7 +551,14 @@ export default function Dashboard() {
                             {String(i + 1).padStart(2, "0")}
                           </td>
                           <td>{date(dueDate(p.start, i))}</td>
-                          <td>{money(installmentAmount(p,i))}{i===0 && <small className="table-small">10 t/m 30 november · 21/30 naar rato</small>}</td>
+                          <td>
+                            {money(installmentAmount(p, i))}
+                            {i === 0 && (
+                              <small className="table-small">
+                                10 t/m 30 november · 21/30 naar rato
+                              </small>
+                            )}
+                          </td>
                           <td>
                             <span
                               className={
@@ -589,13 +593,20 @@ export default function Dashboard() {
                                 if (
                                   !e.target.value ||
                                   window.confirm(
-                                    `Ontvangst van ${money(installmentAmount(p,i))} voor termijn ${i + 1} bevestigen?`,
+                                    `Ontvangst van ${money(installmentAmount(p, i))} voor termijn ${i + 1} bevestigen?`,
                                   )
                                 )
                                   paid(i, e.target.value);
                               }}
                             />
-                            {v.paid && <small className="table-small">Ontvangen: {money(v.receivedAmount ?? installmentAmount(p,i))}</small>}
+                            {v.paid && (
+                              <small className="table-small">
+                                Ontvangen:{" "}
+                                {money(
+                                  v.receivedAmount ?? installmentAmount(p, i),
+                                )}
+                              </small>
+                            )}
                           </td>
                           <td>
                             {v.paid ? (
@@ -712,129 +723,11 @@ export default function Dashboard() {
             </>
           )}
           {tab === 3 && (
-            <>
-              <div className="compact-kpis">
-                <Kpi
-                  label="Unit 1107 · aankoop / sqft"
-                  value={money(p.purchase / p.area)}
-                  sub={`${num(p.area)} sqft inclusief balkons`}
-                />
-                <Kpi
-                  label="Unit 1107 · jaarhuur / sqft"
-                  value={money(f.annual / p.area)}
-                  sub="Geëxtrapoleerd · exclusief kosten"
-                />
-                <Kpi
-                  label="Afwerking & inrichting 1107"
-                  value="Nog niet vastgelegd"
-                  sub="Vergelijkingen zijn hier niet voor gecorrigeerd"
-                />
-              </div>
-              <div className="demo-banner">
-                <span className="demo-label">DEMONSTRATIE</span>
-                <div>
-                  <strong>
-                    Voorbeeldgegevens, geen echte markttransacties
-                  </strong>
-                  <p>
-                    Alle onderstaande objecten en bedragen zijn fictief. Gebruik
-                    deze niet voor een investeringsbeslissing.
-                  </p>
-                </div>
-              </div>
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <h2>De markt rondom jouw appartement</h2>
-                    <p>Binghatti Apex · 1-bedroom vergelijkingen</p>
-                  </div>
-                </div>
-                <div className="filters">
-                  {["Alle", "Te koop", "Verkocht", "Te huur", "Verhuurd"].map(
-                    (v) => (
-                      <button
-                        key={v}
-                        className={filter === v ? "selected" : ""}
-                        onClick={() => setFilter(v)}
-                      >
-                        {v === "Verhuurd" ? "Huurtransacties" : v}
-                      </button>
-                    ),
-                  )}
-                </div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Object / demonstratie</th>
-                        <th>Categorie</th>
-                        <th>Oppervlakte</th>
-                        <th>Bedrag</th>
-                        <th>AED / sqft</th>
-                        <th>Verschil met 1107¹</th>
-                        <th>Afwerking</th>
-                        <th>Inrichting</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {demos
-                        .filter((v) => filter === "Alle" || v.type === filter)
-                        .map((v) => {
-                          const rental =
-                            v.type === "Te huur" || v.type === "Verhuurd";
-                          const base = rental
-                            ? f.annual / p.area
-                            : p.purchase / p.area;
-                          return (
-                            <tr key={v.unit}>
-                              <td className="strong">
-                                {v.unit}
-                                <small className="table-small">
-                                  Fictief · geen bron
-                                </small>
-                              </td>
-                              <td>
-                                <span className="badge">{v.type}</span>
-                              </td>
-                              <td>{v.size} sqft</td>
-                              <td>
-                                {money(v.amount)}
-                                {rental && (
-                                  <small className="table-small">
-                                    per jaar
-                                  </small>
-                                )}
-                              </td>
-                              <td>{num(v.amount / v.size)}</td>
-                              <td className="gold">
-                                {num((v.amount / v.size / base - 1) * 100)}%
-                              </td>
-                              <td>{v.finish}</td>
-                              <td>{v.furnished}</td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="formula">
-                  <p>
-                    ¹ Vergelijking op prijs per sqft: verkoop met jouw
-                    aankoopprijs; huur met jouw geëxtrapoleerde jaarhuur.
-                    Verschillen in inrichting en afwerking zijn niet
-                    gecorrigeerd.
-                  </p>
-                  <h3>Voorbereid op verifieerbare bronnen</h3>
-                  <p>
-                    Een toekomstige koppeling kan bron, bron-URL,
-                    transactiedatum, verificatiestatus, object-ID en ophaaldatum
-                    vastleggen. Bayut-vraagprijzen en Dubai Land
-                    Department-transacties moeten afzonderlijk worden
-                    beoordeeld. Er is nu geen live koppeling actief.
-                  </p>
-                </div>
-              </section>
-            </>
+            <MarketMonitor
+              property={p}
+              records={data.market ?? []}
+              onChange={(market) => setData((d) => ({ ...d, market }))}
+            />
           )}
           {tab === 4 && (
             <>
@@ -1127,8 +1020,8 @@ export default function Dashboard() {
             </div>
             <p className="muted">
               Een wijziging van de maandhuur herberekent alle negen termijnen,
-              de geplande termijnen. Bevestigde ontvangstbedragen blijven bewaard. Gebruik dit alleen om de contractgegevens
-              te corrigeren.
+              de geplande termijnen. Bevestigde ontvangstbedragen blijven
+              bewaard. Gebruik dit alleen om de contractgegevens te corrigeren.
             </p>
             <div className="modal-actions">
               <button className="btn" onClick={exportData}>

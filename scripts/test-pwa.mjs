@@ -77,12 +77,64 @@ try {
     .getByRole("button", { name: "Huuradministratie", exact: true })
     .click();
   assert.equal(await page.getByText("Betaald", { exact: true }).count(), 1);
-  for (const tab of [
-    "Kosten en rendement",
-    "Marktmonitor",
-    "Waardeontwikkeling",
-  ])
-    await page.getByRole("button", { name: tab, exact: true }).click();
+  await page.getByRole("button", { name: "Marktmonitor", exact: true }).click();
+  assert.equal(
+    await page.locator("table").last().locator("tbody tr").count(),
+    10,
+  );
+  assert.match(await page.locator("main").innerText(), /80\.000/);
+  assert.match(
+    await page.locator("main").innerText(),
+    /niet rechtstreeks geverifieerd/,
+  );
+  await page.getByLabel("Marktcategorie").selectOption("rent-transaction");
+  assert.equal(
+    await page.locator("table").last().locator("tbody tr").count(),
+    5,
+  );
+  await page.getByLabel("Marktcategorie").selectOption("sale-transaction");
+  assert.equal(
+    await page.locator("table").last().locator("tbody tr").count(),
+    5,
+  );
+  await page
+    .getByRole("button", { name: "Bayut · aanbod", exact: true })
+    .click();
+  assert.match(
+    await page.locator("table").last().innerText(),
+    /Nog geen brongegevens/,
+  );
+  for (const width of [390, 820]) {
+    await page.setViewportSize({ width, height: 1180 });
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    );
+  }
+  await page
+    .getByRole("button", { name: "Bayut-advertentie vastleggen", exact: true })
+    .click();
+  await page
+    .locator("input[name=url]")
+    .fill("https://www.bayut.com/property/details-ui-test.html");
+  await page.locator("input[name=unit]").fill("UI-TEST");
+  await page.locator("input[name=area]").fill("900");
+  await page.locator("input[name=amount]").fill("1300000");
+  await page
+    .getByRole("button", { name: "Opslaan met bronvermelding", exact: true })
+    .click();
+  await page.getByLabel("Marktcategorie").selectOption("all");
+  assert.match(await page.locator("table").last().innerText(), /UI-TEST/);
+  await page.getByRole("button", { name: "Archiveren", exact: true }).click();
+  assert.match(await page.locator("table").last().innerText(), /Gearchiveerd/);
+  await page.getByRole("button", { name: "Verwijderen", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Kosten en rendement", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Waardeontwikkeling", exact: true })
+    .click();
   await page.getByLabel("Peildatum", { exact: true }).fill("2027-11-10");
   await page.getByLabel("Waarde in AED").fill("1320000");
   await page.getByRole("button", { name: "Waarde toevoegen" }).click();

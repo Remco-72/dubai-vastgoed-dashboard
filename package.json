@@ -7,7 +7,7 @@
     "build": "next build --webpack && node scripts/build-offline.mjs",
     "start": "node scripts/serve-static.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node lib/finance.test.ts",
+    "test": "node lib/finance.test.ts && node lib/market.test.ts",
     "preview": "node scripts/preview.mjs",
     "build:pages": "node scripts/build-pages.mjs",
     "test:pwa": "node scripts/test-pwa.mjs"
